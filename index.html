@@ -16,7 +16,7 @@
     body {
       background: linear-gradient(135deg, #0b0f1c 0%, #1a1f33 100%);
       font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -26,7 +26,7 @@
     .ac-machine {
       width: 100%;
       max-width: 1400px;
-      height: 90vh;
+      min-height: 90vh;
       background: rgba(18, 22, 36, 0.85);
       backdrop-filter: blur(20px);
       border-radius: 2.5rem;
@@ -57,11 +57,6 @@
       justify-content: space-between;
       gap: 0.5rem;
       text-transform: uppercase;
-    }
-
-    .left-header i {
-      font-style: normal;
-      font-size: 1.2rem;
     }
 
     .user-badge-mini {
@@ -96,7 +91,8 @@
       word-break: break-word;
       border: 1px solid #2a3052;
       box-shadow: inset 0 4px 12px rgba(0,0,0,0.5);
-      transition: all 0.2s;
+      min-height: 400px;
+      max-height: 70vh;
     }
 
     .code-output:empty::before {
@@ -498,6 +494,22 @@
       opacity: 1;
     }
 
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     @media (max-width: 768px) {
       .ac-machine {
         flex-direction: column;
@@ -516,6 +528,7 @@
       }
       .code-output {
         min-height: 200px;
+        max-height: 50vh;
       }
     }
   </style>
@@ -606,15 +619,15 @@
 
 <script>
   (function() {
-    // ============ API 配置（硬编码，不展示给用户） ============
-    const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-    const API_KEY = 'sk-2780304eb6554c629cb0d68a031c11c1';
-
     // ============ Supabase 配置 ============
     const SUPABASE_URL = 'https://rihfowjielhukozkrzoq.supabase.co/';
     const SUPABASE_ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpaGZvd2ppZWxodWtvemtyem9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODY5MjksImV4cCI6MjA5ODk2MjkyOX0.xGximEvs6ZORcXjjWcJftu-fRvQkkpIZI0tWzixnYD0';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============ Edge Function URL ============
+    // 注意：部署Edge Function后，将下面的URL替换为实际的Function URL
+    const AI_PROXY_URL = 'https://rihfowjielhukozkrzoq.supabase.co/functions/v1/ai-proxy';
 
     // ============ DOM 元素 ============
     const codeDisplay = document.getElementById('codeDisplay');
@@ -646,7 +659,7 @@
 
     // ============ 状态 ============
     const AI_MODEL = "deepseek-v4-flash";
-    const COST_PER_GENERATION = 1; // 消耗1级
+    const COST_PER_GENERATION = 1;
 
     let currentUser = null;
     let userProfile = null;
@@ -699,7 +712,6 @@
           username: userProfile.username
         };
       } else {
-        // 创建默认profile - 初始等级为1
         const fallbackUsername = currentUser.user_metadata?.username || '玩家';
         const { error: insertError } = await supabase
           .from('profiles')
@@ -977,7 +989,7 @@
       return `你是一个顶尖的编程竞赛助手。${algoLine}请使用${language}语言编写解决方案。${commentInstruction}你的回复必须只包含代码块或纯代码，不要包含任何解释性文字（除了要求的注释外），不要使用markdown代码块标记。直接输出可运行的代码。`;
     }
 
-    // ============ 调用API生成代码 ============
+    // ============ 调用API生成代码（通过Edge Function代理） ============
     async function generateCode() {
       if (isGenerating) return;
 
@@ -1006,7 +1018,7 @@
 
       isGenerating = true;
       solveBtn.disabled = true;
-      solveBtn.textContent = '⏳ 生成中...';
+      solveBtn.innerHTML = '<span class="loading-spinner"></span>生成中...';
       statusMsg.textContent = `🌟 已消耗1级，剩余 ${userProfile.level} 级，生成代码中...`;
       codeDisplay.textContent = '';
 
@@ -1014,11 +1026,10 @@
       const userMessage = `题目描述：\n${problem}`;
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(AI_PROXY_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`
           },
           body: JSON.stringify({
             model: AI_MODEL,
@@ -1037,6 +1048,11 @@
         }
 
         const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error.message || '未知错误');
+        }
+
         let aiText = '';
         if (data.choices && data.choices.length > 0) {
           aiText = data.choices[0].message?.content || '';
@@ -1076,6 +1092,7 @@
         await syncUserProfile(currentUser.id);
       } finally {
         isGenerating = false;
+        solveBtn.innerHTML = '🚀 消耗1级生成代码';
         solveBtn.disabled = false;
         updateSolveButton();
       }
