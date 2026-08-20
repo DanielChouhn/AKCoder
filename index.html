@@ -626,7 +626,6 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ============ Edge Function URL ============
-    // 注意：部署Edge Function后，将下面的URL替换为实际的Function URL
     const AI_PROXY_URL = 'https://rihfowjielhukozkrzoq.supabase.co/functions/v1/ai-proxy';
 
     // ============ DOM 元素 ============
@@ -989,7 +988,7 @@
       return `你是一个顶尖的编程竞赛助手。${algoLine}请使用${language}语言编写解决方案。${commentInstruction}你的回复必须只包含代码块或纯代码，不要包含任何解释性文字（除了要求的注释外），不要使用markdown代码块标记。直接输出可运行的代码。`;
     }
 
-    // ============ 调用API生成代码（通过Edge Function代理） ============
+    // ============ 调用API生成代码 ============
     async function generateCode() {
       if (isGenerating) return;
 
@@ -1030,6 +1029,8 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
             model: AI_MODEL,
@@ -1043,8 +1044,8 @@
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -1075,7 +1076,7 @@
         statusMsg.textContent = `✅ 代码生成完毕 (剩余 ${userProfile.level} 级)`;
 
       } catch (err) {
-        console.error(err);
+        console.error('生成错误:', err);
         statusMsg.textContent = `⚠️ 错误: ${err.message}`;
         codeDisplay.textContent = `// 请求失败: ${err.message}`;
 
