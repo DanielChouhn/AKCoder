@@ -285,6 +285,30 @@
       min-height: 1.2rem;
     }
 
+    /* ===== 新增：底部信息样式 ===== */
+    .info-footer {
+      margin-top: 0.5rem;
+      padding: 0.6rem 1rem;
+      background: rgba(20, 25, 45, 0.5);
+      border-radius: 0.8rem;
+      border: 1px solid rgba(100, 120, 255, 0.1);
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6a7aae;
+      line-height: 1.8;
+      flex-shrink: 0;
+    }
+    .info-footer a {
+      color: #66d0ff;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .info-footer a:hover {
+      color: #8ab4ff;
+      text-decoration: underline;
+    }
+    /* ===== 新增结束 ===== */
+
     .settings-overlay {
       position: fixed;
       top: 0;
@@ -570,6 +594,13 @@
       <button class="submit-btn" id="solveBtn">🚀 消耗1级生成代码</button>
       <div class="status-text" id="statusMessage"></div>
     </div>
+
+    <!-- ===== 新增：信息底部 ===== -->
+    <div class="info-footer">
+      🏆 洛谷团队: <a href="https://www.luogu.com.cn/team/121453" target="_blank">www.luogu.com.cn/team/121453</a><br>
+      🌐 官网: <a href="https://danielchouhn.github.io/CppGames" target="_blank">danielchouhn.github.io/CppGames</a>
+    </div>
+    <!-- ===== 新增结束 ===== -->
   </div>
 </div>
 
@@ -584,14 +615,14 @@
       <label>📝 是否添加详细题目思路作为注释</label>
       <div class="radio-group">
         <label><input type="radio" name="addComment" value="是"> 是</label>
-        <label><input type="radio" name="addComment" value="否" checked> 否</label>  <!-- 添加 checked -->
+        <label><input type="radio" name="addComment" value="否" checked> 否</label>
       </div>
     </div>
     <div class="setting-item">
       <label>💻 使用语言</label>
       <select id="languageSelect">
         <option value="python">Python</option>
-        <option value="c++" selected>C++</option>  <!-- 改为默认选中 -->
+        <option value="c++" selected>C++</option>
       </select>
     </div>
     <div class="setting-item">
